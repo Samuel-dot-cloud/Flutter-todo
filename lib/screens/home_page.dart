@@ -46,8 +46,18 @@ class _HomePageState extends State<HomePage> {
                           child: ListView.builder(
                             itemCount: snapshot.data.length,
                             itemBuilder: (context, index) {
-                              return TaskCardWidget(
-                                title: snapshot.data[index].title,
+                              return GestureDetector(
+                                onTap: (){
+                                  Navigator.push(context, MaterialPageRoute(
+                                      builder: (context) => TaskPage(
+                                        task: snapshot.data[index],
+                                      ),
+                                  ),
+                                  );
+                                },
+                                child: TaskCardWidget(
+                                  title: snapshot.data[index].title,
+                                ),
                               );
                             },
                           ),
@@ -64,7 +74,10 @@ class _HomePageState extends State<HomePage> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => TaskPage()),
+                      MaterialPageRoute(builder: (context) => TaskPage(
+                        task: null,
+                      ),
+                      ),
                     ).then((value){
                       setState(() {});
                     });
