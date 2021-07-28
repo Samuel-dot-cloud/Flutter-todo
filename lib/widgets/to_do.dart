@@ -36,12 +36,14 @@ class TodoWidget extends StatelessWidget {
               ) ,
             ),
           ),
-          Text(
-            text,
-            style: TextStyle(
-              color: isDone ? const Color(0xFF211551) : const Color(0xFF86829D),
-              fontSize: 16.0,
-              fontWeight: isDone ? FontWeight.bold : FontWeight.w500,
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: isDone ? const Color(0xFF211551) : const Color(0xFF86829D),
+                fontSize: 16.0,
+                fontWeight: isDone ? FontWeight.bold : FontWeight.w500,
+              ),
             ),
           ),
         ],

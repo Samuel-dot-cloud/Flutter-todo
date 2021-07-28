@@ -18,6 +18,7 @@ class _TaskPageState extends State<TaskPage> {
 
   int _taskId = 0;
   String _taskTitle = '';
+  String _taskDescription = '';
 
   late FocusNode _titleFocus;
   late FocusNode _descriptionFocus;
@@ -33,6 +34,7 @@ class _TaskPageState extends State<TaskPage> {
       _contentVisible = true;
 
       _taskTitle = widget.task!.title;
+      _taskDescription = widget.task!.description;
       _taskId = widget.task!.id!;
     }
 
@@ -92,7 +94,7 @@ class _TaskPageState extends State<TaskPage> {
 
                               Task _newTask = Task(
                                 title: value,
-                                description: '',
+                                description: 'No description provided.',
                               );
 
                               _taskId = await _dbHelper.insertTask(_newTask);
@@ -102,7 +104,8 @@ class _TaskPageState extends State<TaskPage> {
                               });
                               print('New task ID : $_taskId');
                             } else {
-                              print('Update existing task');
+                              await _dbHelper.updateTaskTitle(_taskId, value);
+                              print('Updated existing task');
                             }
                             _descriptionFocus.requestFocus();
                           }
@@ -122,17 +125,24 @@ class _TaskPageState extends State<TaskPage> {
                   ],
                 ),
               ),
-               Visibility(
-                 visible: _contentVisible,
-                 child: Padding(
+              Visibility(
+                visible: _contentVisible,
+                child: Padding(
                   padding: const EdgeInsets.only(
                     bottom: 12.0,
                   ),
                   child: TextField(
                     focusNode: _descriptionFocus,
-                    onSubmitted: (value){
+                    onSubmitted: (value) {
+                      if (value != '') {
+                        if (_taskId != 0) {
+                          _dbHelper.updateTaskDescription(_taskId, value);
+                        }
+                      }
                       _todoFocus.requestFocus();
                     },
+                    controller: TextEditingController()
+                      ..text = _taskDescription,
                     decoration: const InputDecoration(
                         hintText: 'Enter task description...',
                         border: InputBorder.none,
@@ -140,8 +150,8 @@ class _TaskPageState extends State<TaskPage> {
                           horizontal: 24.0,
                         )),
                   ),
+                ),
               ),
-               ),
               Visibility(
                 visible: _contentVisible,
                 child: FutureBuilder(
@@ -153,8 +163,16 @@ class _TaskPageState extends State<TaskPage> {
                         itemCount: snapshot.data.length,
                         itemBuilder: (context, index) {
                           return GestureDetector(
-                            onTap: () {
+                            onTap: () async {
                               // Switch todo completion state
+                              if (snapshot.data[index].isDone == 0) {
+                                await _dbHelper.updateTodoStatus(
+                                    snapshot.data[index].id, 1);
+                              } else {
+                                await _dbHelper.updateTodoStatus(
+                                    snapshot.data[index].id, 0);
+                              }
+                              setState(() {});
                             },
                             child: TodoWidget(
                               snapshot.data[index].isDone == 0 ? false : true,
@@ -209,7 +227,9 @@ class _TaskPageState extends State<TaskPage> {
                                 );
 
                                 await _dbHelper.insertTodo(_newTodo);
-                                setState(() {});
+                                setState(() {
+                                  _todoFocus.requestFocus();
+                                });
                                 print('Creating new todo');
                               }
                             }
@@ -232,11 +252,11 @@ class _TaskPageState extends State<TaskPage> {
               bottom: 24.0,
               right: 24.0,
               child: GestureDetector(
-                onTap: () {
-                  // Navigator.push(
-                  //   context,
-                  //   MaterialPageRoute(builder: (context) => TaskPage()),
-                  // );
+                onTap: () async {
+                  if(_taskId != 0){
+                    await _dbHelper.deleteTask(_taskId);
+                    Navigator.pop(context);
+                  }
                 },
                 child: Container(
                   width: 60.0,
