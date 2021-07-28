@@ -133,10 +133,11 @@ class _TaskPageState extends State<TaskPage> {
                   ),
                   child: TextField(
                     focusNode: _descriptionFocus,
-                    onSubmitted: (value) {
+                    onSubmitted: (value) async {
                       if (value != '') {
                         if (_taskId != 0) {
-                          _dbHelper.updateTaskDescription(_taskId, value);
+                          await _dbHelper.updateTaskDescription(_taskId, value);
+                          _taskDescription = value;
                         }
                       }
                       _todoFocus.requestFocus();
@@ -219,11 +220,11 @@ class _TaskPageState extends State<TaskPage> {
                             // Check if field is not empty
                             if (value != '') {
                               //Check if the task is null
-                              if (widget.task != null) {
+                              if (_taskId != 0) {
                                 Todo _newTodo = Todo(
                                   title: value,
                                   isDone: 0,
-                                  taskId: widget.task?.id,
+                                  taskId: _taskId,
                                 );
 
                                 await _dbHelper.insertTodo(_newTodo);
