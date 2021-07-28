@@ -19,96 +19,132 @@ class _TaskPageState extends State<TaskPage> {
   int _taskId = 0;
   String _taskTitle = '';
 
+  late FocusNode _titleFocus;
+  late FocusNode _descriptionFocus;
+  late FocusNode _todoFocus;
+
+  bool _contentVisible = false;
+
   @override
   void initState() {
     // TODO: implement initState
     if (widget.task != null) {
+      //set visibility to true
+      _contentVisible = true;
+
       _taskTitle = widget.task!.title;
       _taskId = widget.task!.id!;
     }
+
+    _titleFocus = FocusNode();
+    _descriptionFocus = FocusNode();
+    _todoFocus = FocusNode();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    _titleFocus.dispose();
+    _descriptionFocus.dispose();
+    _todoFocus.dispose();
+
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         body: SafeArea(
-      child: Container(
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                    top: 24.0,
-                    bottom: 6.0,
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      InkWell(
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.all(24.0),
-                          child: Image(
-                            image: AssetImage('assets/images/back.png'),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: TextField(
-                          onSubmitted: (value) async {
-                            print('Field value : $value');
-                            // Check if field is not empty
-                            if (value != '') {
-                              //Check if the task is null
-                              if (widget.task == null) {
-                                DatabaseHelper _dbHelper = DatabaseHelper();
-
-                                Task _newTask = Task(
-                                  title: value,
-                                  description: '',
-                                );
-
-                                await _dbHelper.insertTask(_newTask);
-                                print('New task has been saved');
-                              } else {
-                                print('Update existing task');
-                              }
-                            }
-                          },
-                          controller: TextEditingController()
-                            ..text = _taskTitle,
-                          decoration: const InputDecoration(
-                            hintText: 'Enter Task Title',
-                            border: InputBorder.none,
-                          ),
-                          style: const TextStyle(
-                            fontSize: 26.0,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF211551),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 24.0,
+                  bottom: 6.0,
                 ),
-                const Padding(
-                  padding: EdgeInsets.only(
+                child: Row(
+                  children: <Widget>[
+                    InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.all(24.0),
+                        child: Image(
+                          image: AssetImage('assets/images/back.png'),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        focusNode: _titleFocus,
+                        onSubmitted: (value) async {
+                          print('Field value : $value');
+                          // Check if field is not empty
+                          if (value != '') {
+                            //Check if the task is null
+                            if (widget.task == null) {
+                              DatabaseHelper _dbHelper = DatabaseHelper();
+
+                              Task _newTask = Task(
+                                title: value,
+                                description: '',
+                              );
+
+                              _taskId = await _dbHelper.insertTask(_newTask);
+                              setState(() {
+                                _contentVisible = true;
+                                _taskTitle = value;
+                              });
+                              print('New task ID : $_taskId');
+                            } else {
+                              print('Update existing task');
+                            }
+                            _descriptionFocus.requestFocus();
+                          }
+                        },
+                        controller: TextEditingController()..text = _taskTitle,
+                        decoration: const InputDecoration(
+                          hintText: 'Enter Task Title',
+                          border: InputBorder.none,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 26.0,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF211551),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+               Visibility(
+                 visible: _contentVisible,
+                 child: Padding(
+                  padding: const EdgeInsets.only(
                     bottom: 12.0,
                   ),
                   child: TextField(
-                    decoration: InputDecoration(
+                    focusNode: _descriptionFocus,
+                    onSubmitted: (value){
+                      _todoFocus.requestFocus();
+                    },
+                    decoration: const InputDecoration(
                         hintText: 'Enter task description...',
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 24.0,
                         )),
                   ),
-                ),
-                FutureBuilder(
+              ),
+               ),
+              Visibility(
+                visible: _contentVisible,
+                child: FutureBuilder(
                   initialData: [],
                   future: _dbHelper.getTodos(_taskId),
                   builder: (context, AsyncSnapshot snapshot) {
@@ -117,7 +153,7 @@ class _TaskPageState extends State<TaskPage> {
                         itemCount: snapshot.data.length,
                         itemBuilder: (context, index) {
                           return GestureDetector(
-                            onTap: (){
+                            onTap: () {
                               // Switch todo completion state
                             },
                             child: TodoWidget(
@@ -130,7 +166,10 @@ class _TaskPageState extends State<TaskPage> {
                     );
                   },
                 ),
-                Padding(
+              ),
+              Visibility(
+                visible: _contentVisible,
+                child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24.0,
                   ),
@@ -157,6 +196,7 @@ class _TaskPageState extends State<TaskPage> {
                       ),
                       Expanded(
                         child: TextField(
+                          focusNode: _todoFocus,
                           onSubmitted: (value) async {
                             // Check if field is not empty
                             if (value != '') {
@@ -182,10 +222,13 @@ class _TaskPageState extends State<TaskPage> {
                       ),
                     ],
                   ),
-                )
-              ],
-            ),
-            Positioned(
+                ),
+              )
+            ],
+          ),
+          Visibility(
+            visible: _contentVisible,
+            child: Positioned(
               bottom: 24.0,
               right: 24.0,
               child: GestureDetector(
@@ -210,8 +253,8 @@ class _TaskPageState extends State<TaskPage> {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     ));
   }
